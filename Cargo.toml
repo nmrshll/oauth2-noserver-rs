@@ -1,8 +1,12 @@
 [package]
-name = "oauth2-noserver-rs"
+name = "oauth2_noserver"
 version = "0.1.0"
 authors = ["nmrshll <marshall.nicolas@gmail.com>"]
 edition = "2018"
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/nmrshll/oauth2-noserver-rs"
+description = "Handles the oauth2 flow for installed apps that don't have a server side"
 
 [dependencies]
 oauth2 = "1.3.0"
