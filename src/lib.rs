@@ -1,5 +1,36 @@
 #![allow(non_snake_case)]
 
+/*!
+Handles the oauth2 flow for installed apps that don't have a server side
+
+```
+fn main() -> Result<(), Box<std::error::Error>> {
+    let config = loadConfig()?;
+
+    let auth_url = "https://accounts.google.com/o/oauth2/v2/auth";
+    let token_url = "https://www.googleapis.com/oauth2/v3/token";
+
+    // Set up the config for the Google OAuth2 process.
+    let oauthConfig = Oauth2Config::new(
+        config.googleapi_app_credentials.client_id,
+        config.googleapi_app_credentials.client_secret,
+        auth_url,
+        token_url,
+    )
+    .add_scope("https://www.googleapis.com/auth/calendar")
+    .add_scope("https://www.googleapis.com/auth/plus.me");
+
+    const PORT: u16 = 14565;
+    let authenticator = oauth2_noserver::Authenticator::new(oauthConfig)
+        .set_port(PORT)
+        .set_redirect_url(format!("http://localhost:{}/oauth/callback", PORT));
+    authenticator.authenticate().unwrap();
+
+    Ok(())
+}
+```
+*/
+
 use std::io::{BufRead, BufReader, Write};
 use std::net::TcpListener;
 
@@ -8,6 +39,19 @@ use rand::Rng;
 use url::Url;
 use webbrowser;
 
+/// Returns a new Flaker based on the specified identifier
+///
+/// # Arguments
+///
+/// * `identifier` - A 6 byte vec that provides some arbitrary identification.
+///
+/// # Remarks
+///
+/// This is a convenience function that converts the `identifier` `vec` into
+/// a 6 byte array. Where possible, prefer the array and use `new`.
+///
+/// *Note*: This also assumes the `flaker` is being created on a little endian
+/// CPU.
 pub struct Authenticator {
     oauthConfig: oauth2::Config,
     port: u16,
@@ -96,9 +140,4 @@ impl Authenticator {
 }
 
 #[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
-}
+mod test;
