@@ -33,46 +33,55 @@ fn main() -> Result<(), Box<std::error::Error>> {
 
 use std::io::{BufRead, BufReader, Write};
 use std::net::TcpListener;
+// use std::sync::mpsc;
+// use std::thread;
+// use std::time::Duration;
 
 pub use oauth2::Config;
 use rand::Rng;
 use url::Url;
 use webbrowser;
 
-/// Returns a new Flaker based on the specified identifier
+/// A struct to hold oauth authentication
 ///
-/// # Arguments
+/// # Fields
+/// - oauthConfig: an oauth::Config
+/// ## Options
+/// - port: the TCP port to wait for the oauth code/token on
+/// - timeoutSeconds: timeout for the authentication process, in seconds
 ///
-/// * `identifier` - A 6 byte vec that provides some arbitrary identification.
-///
-/// # Remarks
-///
-/// This is a convenience function that converts the `identifier` `vec` into
-/// a 6 byte array. Where possible, prefer the array and use `new`.
-///
-/// *Note*: This also assumes the `flaker` is being created on a little endian
-/// CPU.
 pub struct Authenticator {
     oauthConfig: oauth2::Config,
     port: u16,
+    timeoutSeconds: u16,
 }
 impl Authenticator {
+    /// returns a new Authenticator configured with all default options
     pub fn new(oauthConfig: oauth2::Config) -> Self {
         Authenticator {
+            // Authenticator with default options
             oauthConfig: oauthConfig
                 .set_redirect_url("http://localhost:14565/oauth/callback".to_string()),
             port: 14565,
+            timeoutSeconds: 60,
         }
     }
+    /// sets the TCP port to await the oauth code on
     pub fn set_port(mut self, port: u16) -> Self {
         self.port = port;
         self
     }
+    /// sets the redirect URL to await the oauth code on
     pub fn set_redirect_url(mut self, redirect_url: String) -> Self {
         self.oauthConfig = self.oauthConfig.set_redirect_url::<&str>(&redirect_url);
         self
     }
-    pub fn authenticate(mut self) -> Result<(), Box<std::error::Error>> {
+    /// sets a timeout for the authentication process, in seconds
+    pub fn set_timeout(mut self, timeoutSeconds: u16) -> Self {
+        self.timeoutSeconds = timeoutSeconds;
+        self
+    }
+    pub fn authenticate(mut self) -> Result<oauth2::Token, Box<std::error::Error>> {
         // Set the state parameter (optional)
         self.oauthConfig = self
             .oauthConfig
@@ -87,6 +96,15 @@ impl Authenticator {
 
         // // These variables will store the code & state retrieved during the authorization process.
         let mut code = String::new();
+
+        // let (_, receiver) = mpsc::channel<Message>();
+        // let t = thread::spawn(move || {
+        //     // match sender.send(net::TcpStream::connect((host.as_str(), port))) {
+        //     //     Ok(()) => {} // everything good
+        //     //     Err(_) => {} // we have been released, don't panic
+        //     // }
+        // });
+        // receiver.recv_timeout(Duration::from_secs(5000));
 
         // A very naive implementation of the redirect server.
         let listener = TcpListener::bind(format!("127.0.0.1:{}", self.port)).unwrap();
@@ -131,13 +149,20 @@ impl Authenticator {
         }
 
         // Exchange the code with a token.
-        let token = self.oauthConfig.exchange_code(code);
+        let token = self
+            .oauthConfig
+            .exchange_code(code)
+            .expect("failed exchanging token");
 
         println!("Google returned the following token:\n{:?}\n", token);
 
-        Ok(())
+        Ok(token)
     }
 }
+
+// enum Message {
+//     Terminate,
+// }
 
 #[cfg(test)]
 mod test;

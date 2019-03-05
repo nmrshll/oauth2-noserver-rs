@@ -25,7 +25,8 @@ authenticator.authenticate().unwrap();
 ```
 
 ## Installing
-Add this to your Cargo.toml:`oauth2_noserver = "0.1.0"`
+Add this to your Cargo.toml:
+`oauth2_noserver = "0.1.2"`
 
 ## Prerequisites
 
@@ -65,6 +66,7 @@ fn main() -> Result<(), Box<std::error::Error>> {
 ```
 
 ## Fully configured
+
 ```rust
 fn main() -> Result<(), Box<std::error::Error>> {
     let oauthConfig = Oauth2Config::new(
